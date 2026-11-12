@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import script from '../../apps-script/Code.gs?raw';
 import { dispatch, callScript, configLink, readConfigLink, setConfig, sync, type Config, type Snapshot } from '../lib/store';
 import { copy, share } from '../lib/share';
+import { knownRayons, qtyLabel } from '../lib/logic';
+import { ArticleForm } from './Courses';
 
 const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
 
@@ -95,6 +97,12 @@ export default function Reglages({ s }: { s: Snapshot }) {
   const [stock, setStock] = useState('');
   const [confirmUnlink, setConfirmUnlink] = useState(false);
   const exclus = [...s.data.exclus].sort((a, b) => a.localeCompare(b, 'fr'));
+  const rayons = useMemo(() => knownRayons(s.data), [s.data]);
+  const moveRayon = (i: number, dir: -1 | 1) => {
+    const next = [...rayons];
+    [next[i], next[i + dir]] = [next[i + dir], next[i]];
+    dispatch({ type: 'setRayons', rayons: next });
+  };
 
   const addStock = () => {
     if (!stock.trim()) return;
@@ -147,6 +155,51 @@ export default function Reglages({ s }: { s: Snapshot }) {
           )}
         </section>
       )}
+
+      <section className="card pad">
+        <h3>Articles habituels</h3>
+        <p>Proposés à chaque nouvelle liste de courses : tu coches ceux à ajouter (lait, pain, yaourts…).</p>
+        <div className="list bordered">
+          {s.data.habituels.map((h) => (
+            <div className="item muted" key={h.name + '|' + h.unit}>
+              <div className="item-main">
+                <span>
+                  {h.name} <span className="qty">{qtyLabel(h.qty, h.unit)}</span>
+                </span>
+                {h.rayon && <small className="sub">{h.rayon}</small>}
+              </div>
+              <button className="icon-btn" onClick={() => dispatch({ type: 'removeHabitual', name: h.name, unit: h.unit })} aria-label={`Retirer ${h.name}`}>
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <ArticleForm data={s.data} label="Ajouter" onAdd={(item) => dispatch({ type: 'setHabitual', item })} />
+      </section>
+
+      <section className="card pad">
+        <h3>Ordre des rayons</h3>
+        <p>Range les rayons dans l'ordre de ton parcours au magasin : la liste de courses suit cet ordre.</p>
+        {rayons.length ? (
+          <div className="list bordered">
+            {rayons.map((r, i) => (
+              <div className="item muted" key={r}>
+                <div className="item-main">
+                  <span>{r}</span>
+                </div>
+                <button className="icon-btn" disabled={i === 0} onClick={() => moveRayon(i, -1)} aria-label={`Monter ${r}`}>
+                  ↑
+                </button>
+                <button className="icon-btn" disabled={i === rayons.length - 1} onClick={() => moveRayon(i, 1)} aria-label={`Descendre ${r}`}>
+                  ↓
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="hint">Les rayons apparaîtront ici dès qu'une recette ou un article en aura un.</p>
+        )}
+      </section>
 
       <section className="card pad">
         <h3>Toujours en stock</h3>

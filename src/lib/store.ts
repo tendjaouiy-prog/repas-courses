@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { applyOp, emptyData } from './logic';
+import { applyOp, coursesHash, coursesRows, emptyData } from './logic';
 import type { AppData, Op } from './types';
 
 export interface Config {
@@ -19,8 +19,8 @@ export interface Snapshot {
 }
 
 const K_CONFIG = 'rc.config';
-const K_SERVER = 'rc.server';
-const K_OUTBOX = 'rc.outbox';
+const K_SERVER = 'rc2.server';
+const K_OUTBOX = 'rc2.outbox';
 const POLL_MS = 20_000;
 const RETRY_MS = 10_000;
 const TIMEOUT_MS = 30_000;
@@ -85,6 +85,7 @@ let status: SyncStatus = config ? 'syncing' : 'local';
 let error = '';
 let lastSync = 0;
 let busy = false;
+let lastCoursesSent = '';
 let timer: ReturnType<typeof setTimeout> | undefined;
 let snapshot: Snapshot = compute();
 const listeners = new Set<() => void>();
@@ -120,6 +121,14 @@ export async function sync(): Promise<void> {
     if (config !== used) return;
     server = { ...emptyData(), ...state };
     outbox = outbox.slice(batch.length);
+    // recopie la liste en cours dans l'onglet Courses du Sheet quand elle a changé
+    if (!outbox.length) {
+      const h = coursesHash(server);
+      if (h !== server.coursesHash && h !== lastCoursesSent) {
+        lastCoursesSent = h;
+        outbox = [{ type: 'writeCourses', rows: coursesRows(server), hash: h }];
+      }
+    }
     save(K_SERVER, server);
     save(K_OUTBOX, outbox);
     status = 'ok';

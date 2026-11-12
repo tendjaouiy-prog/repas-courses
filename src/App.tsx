@@ -40,7 +40,7 @@ export default function App() {
   const s = useStore();
   const [tab, setTab] = useState<Tab>(() => (readConfigLink(location.hash) ? 'reglages' : 'planning'));
   const [editRecipe, setEditRecipe] = useState<string | null>(null);
-  const left = useMemo(() => buildShoppingList(s.data).items.filter((i) => i.state === '').length, [s.data]);
+  const left = useMemo(() => buildShoppingList(s.data).items.filter((i) => i.status === 'todo').length, [s.data]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

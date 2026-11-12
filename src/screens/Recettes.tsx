@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { findIngredient, formatQty, knownValues, norm, parseQty, portionsByRecipe } from '../lib/logic';
+import { today } from '../lib/dates';
+import { allTags, findIngredient, formatQty, knownValues, norm, parseQty } from '../lib/logic';
 import { dispatch } from '../lib/store';
 import type { AppData, Recipe } from '../lib/types';
 import { Empty, Sheet } from '../ui';
@@ -21,6 +22,12 @@ const blankRow = (): Row => ({ id: ++rowId, name: '', qty: '', unit: '', rayon: 
 function Editor({ data, original, onClose }: { data: AppData; original: Recipe | null; onClose: () => void }) {
   const [name, setName] = useState(original?.name ?? '');
   const [notes, setNotes] = useState(original?.notes ?? '');
+  const [tags, setTags] = useState<string[]>(original?.tags ?? []);
+  const [newTag, setNewTag] = useState('');
+  const [favorite, setFavorite] = useState(original?.favorite ?? false);
+  const knownTags = useMemo(() => [...new Set([...allTags(data.recipes), ...tags])], [data.recipes, tags]);
+  const hasTag = (t: string) => tags.some((x) => norm(x) === norm(t));
+  const toggleTag = (t: string) => setTags((ts) => (ts.some((x) => norm(x) === norm(t)) ? ts.filter((x) => norm(x) !== norm(t)) : [...ts, t.trim()]));
   const [base, setBase] = useState(1);
   const [rows, setRows] = useState<Row[]>(() =>
     original?.ingredients.length
@@ -48,7 +55,7 @@ function Editor({ data, original, onClose }: { data: AppData; original: Recipe |
     dispatch({
       type: 'saveRecipe',
       oldName: original?.name ?? '',
-      recipe: { name: trimmed, notes, ingredients: filled.map((r) => ({ name: r.name, qty: parseQty(r.qty) / base, unit: r.unit, rayon: r.rayon })) },
+      recipe: { name: trimmed, notes, tags, favorite, ingredients: filled.map((r) => ({ name: r.name, qty: parseQty(r.qty) / base, unit: r.unit, rayon: r.rayon })) },
     });
     onClose();
   };
@@ -93,6 +100,44 @@ function Editor({ data, original, onClose }: { data: AppData; original: Recipe |
         <datalist id="dl-rayons">{rayons.map((v) => <option key={v} value={v} />)}</datalist>
       </div>
 
+      <div className="field">
+        <span>Étiquettes</span>
+        <div className="chips">
+          {knownTags.map((t) => (
+            <button key={t} className={`chip${hasTag(t) ? ' on' : ''}`} onClick={() => toggleTag(t)} aria-pressed={hasTag(t)}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className="bar">
+          <input
+            className="input"
+            placeholder="Nouvelle étiquette (ex. rapide, végé)"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newTag.trim()) {
+                if (!hasTag(newTag)) toggleTag(newTag);
+                setNewTag('');
+              }
+            }}
+          />
+          <button
+            className="btn ghost"
+            disabled={!newTag.trim()}
+            onClick={() => {
+              if (!hasTag(newTag)) toggleTag(newTag);
+              setNewTag('');
+            }}
+          >
+            Ajouter
+          </button>
+        </div>
+        <button className={`chip fav${favorite ? ' on' : ''}`} onClick={() => setFavorite((f) => !f)} aria-pressed={favorite}>
+          {favorite ? '⭐ Favori' : '☆ Mettre en favori'}
+        </button>
+      </div>
+
       <label className="field">
         <span>Notes, étapes ou lien</span>
         <textarea className="input" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -111,7 +156,7 @@ function Editor({ data, original, onClose }: { data: AppData; original: Recipe |
 
       {confirmDelete && original && (
         <Sheet title={`Supprimer « ${original.name} » ?`} onClose={() => setConfirmDelete(false)}>
-          <p>La recette est retirée de la liste et du planning de la semaine.</p>
+          <p>La recette est retirée de la liste et des repas planifiés à partir d'aujourd'hui. Les repas passés restent dans l'historique.</p>
           <div className="actions">
             <button className="btn ghost" onClick={() => setConfirmDelete(false)}>
               Annuler
@@ -119,7 +164,7 @@ function Editor({ data, original, onClose }: { data: AppData; original: Recipe |
             <button
               className="btn danger"
               onClick={() => {
-                dispatch({ type: 'deleteRecipe', name: original.name });
+                dispatch({ type: 'deleteRecipe', name: original.name, from: today() });
                 onClose();
               }}
             >
@@ -134,11 +179,15 @@ function Editor({ data, original, onClose }: { data: AppData; original: Recipe |
 
 export default function Recettes({ data, editing, setEditing }: { data: AppData; editing: string | null; setEditing: (name: string | null) => void }) {
   const [query, setQuery] = useState('');
-  const portions = useMemo(() => portionsByRecipe(data), [data]);
-  const list = useMemo(
-    () => data.recipes.filter((r) => norm(r.name).includes(norm(query)) || r.ingredients.some((i) => norm(i.name).includes(norm(query)))).sort((a, b) => a.name.localeCompare(b.name, 'fr')),
-    [data.recipes, query],
-  );
+  const [tag, setTag] = useState<string | null>(null);
+  const [favOnly, setFavOnly] = useState(false);
+  const tags = useMemo(() => allTags(data.recipes), [data.recipes]);
+  const list = useMemo(() => {
+    const q = norm(query);
+    return data.recipes
+      .filter((r) => (!q || norm(r.name).includes(q) || r.ingredients.some((i) => norm(i.name).includes(q))) && (!tag || r.tags.some((x) => norm(x) === norm(tag))) && (!favOnly || r.favorite))
+      .sort((a, b) => (a.favorite === b.favorite ? a.name.localeCompare(b.name, 'fr') : a.favorite ? -1 : 1));
+  }, [data.recipes, query, tag, favOnly]);
   const original = editing ? (data.recipes.find((r) => norm(r.name) === norm(editing)) ?? null) : null;
 
   return (
@@ -149,15 +198,31 @@ export default function Recettes({ data, editing, setEditing }: { data: AppData;
           + Recette
         </button>
       </div>
+      {(tags.length > 0 || data.recipes.some((r) => r.favorite)) && (
+        <div className="chips scroll">
+          <button className={`chip${favOnly ? ' on' : ''}`} onClick={() => setFavOnly((v) => !v)}>
+            ⭐ Favoris
+          </button>
+          {tags.map((x) => (
+            <button key={x} className={`chip${tag === x ? ' on' : ''}`} onClick={() => setTag(tag === x ? null : x)}>
+              {x}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="card list">
         {list.map((r) => (
-          <button className="row-btn" key={r.name} onClick={() => setEditing(r.name)}>
-            <span>
-              {r.name}
-              <small className="sub">{r.ingredients.map((i) => i.name).join(', ') || 'Aucun ingrédient'}</small>
-            </span>
-            {portions.has(norm(r.name)) && <b className="pill">cette semaine</b>}
-          </button>
+          <div className="recipe-row" key={r.name}>
+            <button className="star" onClick={() => dispatch({ type: 'setFavorite', name: r.name, on: !r.favorite })} aria-label={r.favorite ? `Retirer ${r.name} des favoris` : `Mettre ${r.name} en favori`} aria-pressed={r.favorite}>
+              {r.favorite ? '⭐' : '☆'}
+            </button>
+            <button className="row-btn" onClick={() => setEditing(r.name)}>
+              <span>
+                {r.name}
+                <small className="sub">{r.tags.length ? r.tags.join(' · ') : r.ingredients.map((i) => i.name).join(', ') || 'Aucun ingrédient'}</small>
+              </span>
+            </button>
+          </div>
         ))}
         {!list.length && <Empty title={data.recipes.length ? 'Aucune recette ne correspond' : 'Pas encore de recette'}>{data.recipes.length ? undefined : 'Ajoute la première avec « + Recette ».'}</Empty>}
       </div>

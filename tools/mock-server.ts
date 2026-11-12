@@ -10,11 +10,13 @@ const api = new Function(
   'SpreadsheetApp',
   'LockService',
   'ContentService',
+  'Utilities',
   `${source.replace("var CODE = 'CHANGE-MOI';", "var CODE = 'test';")}; return { doPost: doPost };`,
 )(
   { getActiveSpreadsheet: () => ss, flush: () => {} },
   { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
   { MimeType: { JSON: 'json' }, createTextOutput: (text: string) => ({ text, setMimeType() { return this; } }) },
+  { formatDate: () => '' },
 );
 
 createServer((req, res) => {

@@ -74,16 +74,12 @@ export class FakeSpreadsheet {
   }
 }
 
-/** Le Sheet « Repas course » tel qu'il existe avant l'appli (onglets et exemples). */
+/** Le Sheet « Repas course » après sa mise à jour pour la version 2 (recettes d'exemple). */
 export function sampleSpreadsheet(): FakeSpreadsheet {
   const ss = new FakeSpreadsheet();
-  ss.insertSheet('Planning').fill([
-    ['📅 Jour', '☀️ Midi', '👥 Pers.', '🌙 Soir', '👥 Pers.'],
-    ...['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((d) => [d, '', 2, '', 2]),
-  ]);
   ss.insertSheet('📖 Recettes').fill([
-    ['🍲 Recette', '🥕 Ingrédient', '⚖️ Qté / 1 portion', 'Unité', '🛒 Rayon', 'Total (auto)', '📝 Notes / lien', 'recette (auto)'],
-    ['Pâtes bolognaise', 'Pâtes', 125, 'g', 'Épicerie', '=FORMULE', '', '=FORMULE'],
+    ['🍲 Recette', '🥕 Ingrédient', '⚖️ Qté / 1 portion', 'Unité', '🛒 Rayon', '📝 Notes / lien', '🏷️ Étiquettes', '⭐ Favori'],
+    ['Pâtes bolognaise', 'Pâtes', 125, 'g', 'Épicerie'],
     ['', 'Bœuf haché', 100, 'g', 'Boucherie'],
     ['', 'Sauce tomate', 0.25, 'pot', 'Épicerie'],
     ['', 'Oignon', 0.25, 'pièce', 'Fruits & légumes'],
@@ -98,11 +94,11 @@ export function sampleSpreadsheet(): FakeSpreadsheet {
     ['', 'Salade', 0.25, 'pièce', 'Fruits & légumes'],
     ['', 'Tomates', 1, 'pièce', 'Fruits & légumes'],
   ]);
-  ss.insertSheet('Liste recettes');
+  ss.insertSheet('Courses').fill([['Rayon', 'Article', 'Quantité', 'Unité', 'État', 'Pour']]);
   ss.insertSheet('Exclus').fill([
     ['🚫 À ne pas envoyer', '📝 Note'],
     ['Sel', 'toujours en stock'],
-    ['Huile d\'olive', 'toujours en stock'],
+    ["Huile d'olive", 'toujours en stock'],
   ]);
   return ss;
 }

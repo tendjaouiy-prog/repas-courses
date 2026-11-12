@@ -4,10 +4,10 @@ Appli web installable (iPhone et Android) pour le foyer : recettes, planning de 
 
 ## Ce que fait l'appli
 
-- **Recettes** : créer, modifier, supprimer. Quantités saisies pour le nombre de personnes voulu, enregistrées pour 1 personne.
-- **Planning** : une recette par repas (midi, soir) sur 7 jours, avec le nombre de personnes de chaque repas.
-- **Historique** : « Nouvelle semaine » archive les repas planifiés avant de vider le planning. On peut relire les semaines passées, en reprendre les repas, et trier les recettes par « pas faites depuis longtemps » pour trouver des idées.
-- **Courses** : liste calculée depuis le planning, regroupée par rayon. Chaque article peut être coché (dans le caddie), marqué « déjà dispo » pour la semaine, ou « toujours en stock » (jamais proposé). Ajouts manuels possibles.
+- **Recettes** : créer, modifier, supprimer, avec étiquettes (rapide, végé…) et favoris. Quantités saisies pour le nombre de personnes voulu, enregistrées pour 1 personne.
+- **Planning daté** : semaine par semaine avec des flèches, midi et soir. Une case peut contenir plusieurs recettes (chacune avec son nombre de personnes), un mot libre sans courses (« Resto ») ou des restes d'un repas des 3 jours précédents (le repas d'origine est alors compté pour plus de personnes). Les semaines passées servent d'historique et peuvent être recopiées.
+- **Idées** : favoris en premier, filtre par étiquette, tri « pas faites depuis longtemps ».
+- **Courses** : « Nouvelle liste » le jour des grosses courses (repas des 7 jours suivants, période modifiable, articles habituels à cocher). Rangée dans l'ordre du magasin. Chaque article peut être coché, marqué « déjà dispo » jusqu'à la liste suivante, ou « toujours en stock ». Pour la petite course, ce qui n'est pas coché est ce qui manque ; si un besoin augmente après les grosses courses, seul le complément s'affiche.
 - **Hors ligne** : les coches faites sans réseau partent dès qu'il revient.
 
 ## Comment ça marche
@@ -18,7 +18,7 @@ téléphones (appli web)  ⇄  script Apps Script du Sheet  ⇄  Google Sheet
 
 `apps-script/Code.gs` est collé dans le Sheet et déployé en « Application Web ». L'appli lui envoie de petites modifications (`setPlan`, `saveRecipe`, `setState`…) et reçoit l'état complet. Un code choisi à l'installation protège l'accès.
 
-Onglets utilisés : `Planning` (B à E), `📖 Recettes` (A à E et G ; F et H sont des formules, jamais écrites), `Exclus` (toujours en stock). Le script crée `État courses` (coches et « déjà dispo »), `Ajouts` (articles manuels) et `Historique` (une ligne par repas archivé). L'onglet `Courses` du Sheet continue de fonctionner tout seul.
+Onglets : `📖 Recettes` (A recette, B ingrédient, C quantité pour 1, D unité, E rayon, F notes, G étiquettes, H favori), `Repas` (une ligne par élément planifié : date, midi/soir, type, recette ou texte, personnes, restes de, id), `Courses` (copie lisible de la liste en cours, écrite par l'appli), `Habituels`, `Rayons` (ordre du magasin), `Exclus` (toujours en stock) et `Liste` (technique : période, coches, ajouts). Les onglets absents sont créés par le script.
 
 ## Mise en route
 
