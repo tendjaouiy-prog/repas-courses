@@ -26,7 +26,7 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
       setConfig(config, await callScript(config, []));
       history.replaceState(null, '', location.pathname);
     } catch (e) {
-      setError(e instanceof Error && e.name !== 'TypeError' && e.name !== 'AbortError' ? e.message : "Impossible de joindre le script. Vérifie l'adresse, la connexion, et que l'accès est « Tout le monde ».");
+      setError(e instanceof Error && e.name !== 'TypeError' && e.name !== 'AbortError' ? e.message : "Impossible de joindre le script. Vérifie l'adresse et la connexion. Le plus souvent, l'accès du déploiement n'est pas « Tout le monde » : Déployer → Gérer les déploiements → crayon → Qui a accès : Tout le monde, Version : Nouvelle version.");
     } finally {
       setBusy(false);
     }
@@ -76,7 +76,7 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
           Dans le Sheet « Repas course » : <strong>Extensions → Apps Script</strong>. Remplace tout le contenu par le script copié, puis enregistre.
         </li>
         <li>
-          <strong>Déployer → Nouveau déploiement</strong>, type « Application Web ». Exécuter en tant que : <strong>Moi</strong>. Qui a accès : <strong>Tout le monde</strong>. Autorise quand Google le demande.
+          <strong>Déployer → Nouveau déploiement</strong>, type « Application Web ». Exécuter en tant que : <strong>Moi</strong>. Qui a accès : <strong>Tout le monde</strong> (pas « Tous les utilisateurs disposant d'un compte Google »). Autorise quand Google le demande.
         </li>
         <li>
           <strong>Colle ici l'URL de l'application Web</strong> (elle finit par /exec).
