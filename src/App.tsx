@@ -38,7 +38,8 @@ function SyncBadge({ s, onClick }: { s: Snapshot; onClick: () => void }) {
 
 export default function App() {
   const s = useStore();
-  const [tab, setTab] = useState<Tab>(() => (readConfigLink(location.hash) ? 'reglages' : 'planning'));
+  // pas encore relié (appli ajoutée à l'écran d'accueil sur iPhone, par exemple) : on ouvre Réglages
+  const [tab, setTab] = useState<Tab>(() => (readConfigLink(location.hash) || !s.config ? 'reglages' : 'planning'));
   const [editRecipe, setEditRecipe] = useState<string | null>(null);
   const left = useMemo(() => buildShoppingList(s.data).items.filter((i) => i.status === 'todo').length, [s.data]);
 

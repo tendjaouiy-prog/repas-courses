@@ -18,10 +18,13 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
   const [copied, setCopied] = useState(false);
   const cleanCode = code.trim().replace(/['\\\s]/g, '');
 
-  const connect = async () => {
+  const [pasted, setPasted] = useState('');
+  const pastedConfig = readConfigLink(pasted);
+
+  const connect = async (given?: Config) => {
     setBusy(true);
     setError('');
-    const config = { url: url.trim(), code: cleanCode };
+    const config = given ?? { url: url.trim(), code: cleanCode };
     try {
       setConfig(config, await callScript(config, []));
       history.replaceState(null, '', location.pathname);
@@ -35,7 +38,7 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
   const button = (
     <>
       {error && <p className="error">{error}</p>}
-      <button className="btn primary wide" disabled={busy || !cleanCode || !isScriptUrl(url)} onClick={connect}>
+      <button className="btn primary wide" disabled={busy || !cleanCode || !isScriptUrl(url)} onClick={() => void connect()}>
         {busy ? 'Connexion…' : 'Relier au Sheet'}
       </button>
     </>
@@ -51,9 +54,30 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
     );
 
   return (
+    <>
     <section className="card pad">
-      <h3>Relier au Google Sheet</h3>
-      <p>À faire une seule fois, depuis un ordinateur de préférence. L'autre téléphone se relie ensuite avec un simple lien.</p>
+      <h3>Tu as reçu un lien ?</h3>
+      <p>Copie le lien reçu (message, WhatsApp) et colle-le ici : ce téléphone se relie au Sheet déjà installé.</p>
+      <input
+        className="input"
+        value={pasted}
+        onChange={(e) => setPasted(e.target.value)}
+        placeholder="Colle le lien ici"
+        aria-label="Lien reçu"
+        inputMode="url"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+      />
+      {pasted.trim() !== '' && !pastedConfig && <em className="error">Ce n'est pas un lien de l'appli : il doit contenir « #c= ».</em>}
+      {error && pastedConfig && <p className="error">{error}</p>}
+      <button className="btn primary wide" disabled={busy || !pastedConfig} onClick={() => pastedConfig && void connect(pastedConfig)}>
+        {busy && pastedConfig ? 'Connexion…' : 'Relier avec ce lien'}
+      </button>
+    </section>
+    <section className="card pad">
+      <h3>Première installation</h3>
+      <p>À faire une seule fois, depuis un ordinateur de préférence. Les autres téléphones se relient ensuite avec un simple lien.</p>
       <ol className="steps">
         <li>
           <strong>Choisis un code</strong> (il protège l'accès au Sheet).
@@ -87,6 +111,7 @@ function Connect({ initial, fromLink }: { initial: Config; fromLink: boolean }) 
       {button}
       <p className="hint">Tant que l'appli n'est pas reliée, ce que tu saisis reste sur ce téléphone et sera remplacé par le contenu du Sheet.</p>
     </section>
+    </>
   );
 }
 
